@@ -1,0 +1,983 @@
+<div id="bt-dashboard-root"></div>
+<style>
+  #bt-dashboard-root {
+    --ink: #1C2333;
+    --ink-soft: #2A3347;
+    --paper: #FAF8F3;
+    --paper-line: #E7E1D4;
+    --amber: #B9793B;
+    --amber-deep: #8F5A26;
+    --teal: #2E6E62;
+    --teal-deep: #1F4E45;
+    --brick: #A6402F;
+    --brick-deep: #7E2F22;
+    --slate: #5B6472;
+    --slate-light: #8A93A0;
+
+    --font-display: 'Roboto Slab', Georgia, serif;
+    --font-body: 'IBM Plex Sans', -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--paper);
+    min-height: 100%;
+    box-sizing: border-box;
+  }
+  #bt-dashboard-root *, #bt-dashboard-root *::before, #bt-dashboard-root *::after {
+    box-sizing: border-box;
+  }
+  #bt-dashboard-root .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+  }
+
+  /* ---------- HEADER ---------- */
+  #bt-dashboard-root .header {
+    background: var(--ink);
+    background-image:
+      linear-gradient(var(--ink-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--ink-soft) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-position: -1px -1px;
+    border-radius: 14px;
+    padding: 26px 28px;
+    color: var(--paper);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  #bt-dashboard-root .header::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(28,35,51,0.92), rgba(28,35,51,0.6) 55%, rgba(28,35,51,0.92));
+    pointer-events: none;
+  }
+  #bt-dashboard-root .header-left { position: relative; z-index: 1; }
+  #bt-dashboard-root .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin: 0 0 8px;
+  }
+  #bt-dashboard-root .title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 26px;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  #bt-dashboard-root .subtitle {
+    font-size: 13px;
+    color: #C7CDD9;
+    margin: 0;
+  }
+  #bt-dashboard-root .header-right {
+    position: relative;
+    z-index: 1;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+  #bt-dashboard-root .live-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.14);
+    padding: 6px 12px;
+    border-radius: 999px;
+    color: #DCE1EA;
+  }
+  #bt-dashboard-root .live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #6FCF97;
+    box-shadow: 0 0 0 0 rgba(111,207,151,0.6);
+    animation: bt-pulse 2s infinite;
+  }
+  #bt-dashboard-root .live-dot.err { background: var(--brick); animation: none; }
+  @keyframes bt-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(111,207,151,0.55); }
+    70% { box-shadow: 0 0 0 7px rgba(111,207,151,0); }
+    100% { box-shadow: 0 0 0 0 rgba(111,207,151,0); }
+  }
+  #bt-dashboard-root .refresh-btn {
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    font-weight: 600;
+    background: var(--amber);
+    color: #241505;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform .12s ease, background .15s ease;
+  }
+  #bt-dashboard-root .refresh-btn:hover { background: #CB8B47; transform: translateY(-1px); }
+  #bt-dashboard-root .refresh-btn:active { transform: translateY(0); }
+
+  #bt-dashboard-root .section-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    font-weight: 700;
+    margin: 4px 0 10px;
+    padding-top: 4px;
+  }
+  #bt-dashboard-root .section-label span {
+    text-transform: none;
+    font-weight: 400;
+    letter-spacing: normal;
+    color: var(--slate-light);
+    font-size: 11px;
+  }
+
+  #bt-dashboard-root .view-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--paper-line);
+  }
+  #bt-dashboard-root .view-tab {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 10px 16px;
+    cursor: pointer;
+    color: var(--slate);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color .12s ease;
+    user-select: none;
+  }
+  #bt-dashboard-root .view-tab:hover { color: var(--ink); }
+  #bt-dashboard-root .view-tab.active {
+    color: var(--ink);
+    border-bottom-color: var(--amber);
+  }
+
+  /* ---------- SUMMARY CARDS ---------- */
+  #bt-dashboard-root .cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 860px) {
+    #bt-dashboard-root .cards { grid-template-columns: repeat(2, 1fr); }
+  }
+  #bt-dashboard-root .card {
+    background: #fff;
+    border: 1px solid var(--paper-line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    position: relative;
+  }
+  #bt-dashboard-root .card .label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--slate-light);
+    margin: 0 0 10px;
+  }
+  #bt-dashboard-root .card .value {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    margin: 0 0 4px;
+  }
+  #bt-dashboard-root .card .sub {
+    font-size: 12px;
+    color: var(--slate);
+    margin: 0;
+  }
+  #bt-dashboard-root .card.amber .value { color: var(--amber-deep); }
+  #bt-dashboard-root .card.teal .value { color: var(--teal-deep); }
+  #bt-dashboard-root .card.brick .value { color: var(--brick-deep); }
+  #bt-dashboard-root .card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 14px; bottom: 14px;
+    width: 3px;
+    border-radius: 3px;
+    background: var(--slate-light);
+  }
+  #bt-dashboard-root .card.amber::before { background: var(--amber); }
+  #bt-dashboard-root .card.teal::before { background: var(--teal); }
+  #bt-dashboard-root .card.brick::before { background: var(--brick); }
+
+  /* ---------- HERO CARD (Total Piutang) ---------- */
+  #bt-dashboard-root .hero-card {
+    background: var(--ink);
+    background-image:
+      linear-gradient(var(--ink-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--ink-soft) 1px, transparent 1px);
+    background-size: 26px 26px;
+    background-position: -1px -1px;
+    border-radius: 14px;
+    padding: 30px 32px;
+    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  #bt-dashboard-root .hero-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(28,35,51,0.94), rgba(28,35,51,0.65) 55%, rgba(28,35,51,0.94));
+    pointer-events: none;
+  }
+  #bt-dashboard-root .hero-card > * { position: relative; z-index: 1; }
+  #bt-dashboard-root .hero-card .label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--amber);
+    margin: 0 0 10px;
+  }
+  #bt-dashboard-root .hero-card .value {
+    font-family: var(--font-display);
+    font-size: 38px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+    margin: 0;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+  #bt-dashboard-root .hero-card .sub {
+    font-size: 12.5px;
+    color: #C7CDD9;
+    margin: 6px 0 0;
+  }
+  #bt-dashboard-root .hero-card .badge {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: #fff;
+    padding: 7px 16px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  /* ---------- STATUS GRID (3 kolom, proporsional) ---------- */
+  #bt-dashboard-root .status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 760px) {
+    #bt-dashboard-root .status-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  #bt-dashboard-root .status-card {
+    background: #fff;
+    border: 1px solid var(--paper-line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    border-top: 3px solid var(--slate-light);
+    transition: box-shadow .15s ease, transform .15s ease;
+  }
+  #bt-dashboard-root .status-card:hover { box-shadow: 0 4px 14px rgba(28,35,51,0.08); transform: translateY(-1px); }
+  #bt-dashboard-root .status-card .stamp { margin-bottom: 12px; }
+  #bt-dashboard-root .status-card .value {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    margin: 0;
+  }
+  #bt-dashboard-root .status-card.overdue { border-top-color: var(--brick); }
+  #bt-dashboard-root .status-card.upcoming { border-top-color: var(--amber); }
+  #bt-dashboard-root .status-card.lunas { border-top-color: var(--teal); }
+  #bt-dashboard-root .status-card.bermasalah { border-top-color: #C98A4E; }
+  #bt-dashboard-root .status-card.kurangbupot { border-top-color: #6FCF57; }
+  #bt-dashboard-root .status-card.kurangssp { border-top-color: #E0C341; }
+
+  /* ---------- BREAKDOWN PANELS ---------- */
+  #bt-dashboard-root .breakdown-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 760px) {
+    #bt-dashboard-root .breakdown-grid { grid-template-columns: 1fr; }
+  }
+  #bt-dashboard-root .breakdown {
+    background: #fff;
+    border: 1px solid var(--paper-line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 0;
+  }
+  #bt-dashboard-root .breakdown h3 {
+    font-family: var(--font-display);
+    font-size: 14px;
+    margin: 0 0 14px;
+    color: var(--ink);
+  }
+  #bt-dashboard-root .bd-row {
+    display: grid;
+    grid-template-columns: 68px 1fr 150px;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 0;
+    font-size: 12.5px;
+  }
+  #bt-dashboard-root .bd-row.ar-row {
+    grid-template-columns: 190px 1fr 170px;
+    padding: 9px 0;
+  }
+  #bt-dashboard-root .bd-row.ar-row .stamp {
+    white-space: nowrap;
+    text-align: center;
+  }
+  #bt-dashboard-root .bd-row .pic {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--ink);
+  }
+  #bt-dashboard-root .bd-track {
+    height: 8px;
+    background: #F0ECE2;
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  #bt-dashboard-root .bd-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--amber), var(--brick));
+    border-radius: 5px;
+  }
+  #bt-dashboard-root .bd-amount {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--slate);
+  }
+
+  /* ---------- FILTERS ---------- */
+  #bt-dashboard-root .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  #bt-dashboard-root .pill-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  #bt-dashboard-root .pill {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--paper-line);
+    background: #fff;
+    cursor: pointer;
+    color: var(--slate);
+    transition: all .12s ease;
+    user-select: none;
+  }
+  #bt-dashboard-root .pill:hover { border-color: var(--amber); }
+  #bt-dashboard-root .pill.active {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+  #bt-dashboard-root .search {
+    margin-left: auto;
+    font-family: var(--font-body);
+    font-size: 13px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--paper-line);
+    width: 220px;
+    background: #fff;
+  }
+  #bt-dashboard-root .search:focus { outline: 2px solid var(--amber); outline-offset: 1px; }
+
+  /* ---------- TABLE ---------- */
+  #bt-dashboard-root .table-wrap {
+    background: #fff;
+    border: 1px solid var(--paper-line);
+    border-radius: 12px;
+    overflow: auto;
+  }
+  #bt-dashboard-root table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    min-width: 920px;
+  }
+  #bt-dashboard-root thead th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--slate-light);
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--paper-line);
+    cursor: pointer;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    background: #fff;
+  }
+  #bt-dashboard-root thead th:hover { color: var(--ink); }
+  #bt-dashboard-root tbody td {
+    padding: 11px 14px;
+    border-bottom: 1px solid #F1EEE5;
+    vertical-align: top;
+  }
+  #bt-dashboard-root tbody tr:hover { background: #FDFCF9; }
+  #bt-dashboard-root .num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  #bt-dashboard-root .mono { font-family: var(--font-mono); font-size: 11.5px; color: var(--slate); }
+  #bt-dashboard-root .pekerjaan-cell { max-width: 220px; }
+  #bt-dashboard-root .ket-cell { max-width: 260px; color: var(--slate); font-size: 11.5px; }
+
+  /* stamp-style status badge */
+  #bt-dashboard-root .stamp {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 4px;
+    border: 1.5px solid currentColor;
+    transform: rotate(-1.5deg);
+    white-space: nowrap;
+  }
+  #bt-dashboard-root .stamp.lunas { color: var(--teal-deep); background: rgba(46,110,98,0.08); }
+  #bt-dashboard-root .stamp.overdue { color: var(--brick-deep); background: rgba(166,64,47,0.08); transform: rotate(1.5deg); }
+  #bt-dashboard-root .stamp.upcoming { color: var(--amber-deep); background: rgba(185,121,59,0.08); }
+  #bt-dashboard-root .stamp.other { color: var(--slate); background: rgba(91,100,114,0.08); }
+  #bt-dashboard-root .stamp.bermasalah { color: #8A4B1F; background: rgba(232,168,124,0.18); transform: rotate(-1deg); }
+  #bt-dashboard-root .stamp.kurangbupot { color: #2F6B3A; background: rgba(111,207,87,0.14); }
+  #bt-dashboard-root .stamp.kurangssp { color: #7A6A12; background: rgba(224,195,65,0.18); }
+
+  #bt-dashboard-root .empty, #bt-dashboard-root .setup, #bt-dashboard-root .errbox {
+    padding: 60px 30px;
+    text-align: center;
+    color: var(--slate);
+  }
+  #bt-dashboard-root .setup code {
+    display: block;
+    background: var(--ink);
+    color: #DCE1EA;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin: 14px auto 0;
+    max-width: 560px;
+    text-align: left;
+    white-space: pre-wrap;
+  }
+  #bt-dashboard-root .footnote {
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--slate-light);
+    margin-top: 18px;
+    font-family: var(--font-mono);
+  }
+</style>
+
+<script>
+(function() {
+  // ============================================================
+  // KONFIGURASI — ganti dengan URL Web App Apps Script Anda
+  // (lihat Code.gs untuk cara deploy)
+  // ============================================================
+  const API_URL = "https://script.google.com/macros/s/AKfycbzPz0lAw34DZmfiipKHgXqYR5-5_ptHcoulZ5sBaVBPIVE9-JTy5vebzPFtjVnKWeiRsg/exec";
+  const REFRESH_MS = 120000; // auto-refresh setiap 2 menit (data di-cache 5 menit di sisi server)
+  const PICS = ['SH','ES','AM','JJ','RS'];
+
+  const root = document.getElementById('bt-dashboard-root');
+  let allInvoices = [];
+  let officialData = null;
+  let picDashboards = null;
+  let bungaData = null;
+  let grandTotals = null;
+  let arHistory = [];
+  let lastUpdated = null;
+
+  let activeView = 'piutang'; // 'piutang' | 'bunga'
+
+  // state tab "Piutang"
+  let activePic = 'ALL';
+  let activeStatus = 'ALL';
+  let searchTerm = '';
+  let sortKey = 'sisaPiutang';
+  let sortDir = -1;
+  let compareWith = ''; // period key (yyyy-MM) untuk dibandingkan dengan saat ini
+
+  // state tab "Alokasi Bunga"
+  let bungaKlien = 'ALL';
+  let bungaStatus = 'ALL';
+  let bungaSearch = '';
+
+  const BULAN_NAMES = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const BULAN_NAMES_FULL = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  function currentPeriodKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  }
+
+
+  function fmtIDR(n) {
+    if (n === null || n === undefined || isNaN(n)) return '-';
+    const sign = n < 0 ? '-' : '';
+    n = Math.abs(n);
+    return sign + 'Rp ' + Math.round(n).toLocaleString('id-ID');
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function categorize(status) {
+    const s = (status || '').trim().toLowerCase();
+    if (s.indexOf('lunas') === 0 || s === 'lunas') return { key: 'LUNAS', label: 'Lunas', cls: 'lunas' };
+    if (s.indexOf('sudah jatuh tempo') !== -1) return { key: 'OVERDUE', label: 'Jatuh Tempo', cls: 'overdue' };
+    if (s.indexOf('belum jatuh tempo') !== -1) return { key: 'UPCOMING', label: 'Belum Jatuh Tempo', cls: 'upcoming' };
+    if (s.indexOf('bermasalah') !== -1 || s.indexOf('terhambat') !== -1) return { key: 'BERMASALAH', label: 'Tagihan Bermasalah', cls: 'bermasalah' };
+    if (s.indexOf('kurang bupot') !== -1) return { key: 'KURANG_BUPOT', label: 'kurang Bupot', cls: 'kurangbupot' };
+    if (s.indexOf('kurang ssp') !== -1 || s.indexOf('ssp/ppn') !== -1) return { key: 'KURANG_SSP', label: 'Kurang SSP/PPN', cls: 'kurangssp' };
+    if (!s) return { key: 'OTHER', label: '—', cls: 'other' };
+    return { key: 'OTHER', label: status, cls: 'other' };
+  }
+
+  const STATUS_ORDER = [
+    { key: 'OVERDUE', label: 'Jatuh Tempo', cls: 'overdue' },
+    { key: 'UPCOMING', label: 'Belum Jatuh Tempo', cls: 'upcoming' },
+    { key: 'BERMASALAH', label: 'Tagihan Bermasalah', cls: 'bermasalah' },
+    { key: 'KURANG_BUPOT', label: 'kurang Bupot', cls: 'kurangbupot' },
+    { key: 'KURANG_SSP', label: 'Kurang SSP/PPN', cls: 'kurangssp' },
+    { key: 'LUNAS', label: 'Pembayaran Diterima', cls: 'lunas' }
+  ];
+  // Grid status di bagian atas dashboard tidak menampilkan "Pembayaran Diterima"
+  // (itu sudah tercermin lewat "Total Piutang" yang mengecil) — tetap tersedia
+  // sebagai pilihan filter di tabel detail invoice di bawah.
+  const STATUS_ORDER_TOP = STATUS_ORDER.filter(sd => sd.key !== 'LUNAS');
+  // kunci status di picDashboards (Code.gs) memakai penulisan asli kolom L
+  const STATUS_SHEET_KEY = {
+    OVERDUE: 'Sudah jatuh Tempo',
+    UPCOMING: 'Belum jatuh tempo',
+    BERMASALAH: 'Tagihan Bermasalah',
+    KURANG_BUPOT: 'kurang Bupot',
+    KURANG_SSP: 'Kurang SSP/PPN',
+    LUNAS: 'LUNAS'
+  };
+
+  function aggregatePicDash(picList) {
+    const agg = { allSpkInclPPN: 0, tertagih: 0, paid: 0, piutang: 0, belumDitagihInclPPN: 0, status: {} };
+    picList.forEach(p => {
+      const d = picDashboards && picDashboards[p];
+      if (!d) return;
+      agg.allSpkInclPPN += d.allSpkInclPPN || 0;
+      agg.tertagih += d.tertagih || 0;
+      agg.paid += d.paid || 0;
+      agg.piutang += d.piutang || 0;
+      agg.belumDitagihInclPPN += d.belumDitagihInclPPN || 0;
+      Object.keys(d.status || {}).forEach(k => {
+        agg.status[k] = (agg.status[k] || 0) + d.status[k];
+      });
+    });
+    return agg;
+  }
+
+  // ============================================================
+  // MAIN RENDER
+  // ============================================================
+  function render() {
+    if (API_URL.indexOf('PASTE_') === 0) {
+      root.innerHTML = `
+        <div class="wrap">
+          <div class="setup">
+            <div class="eyebrow" style="color:var(--amber)">SETUP DIPERLUKAN</div>
+            <p style="font-family:var(--font-display);font-size:18px;color:var(--ink);margin:6px 0 4px;">Dashboard belum terhubung ke spreadsheet</p>
+            <p>Deploy <b>Code.gs</b> sebagai Web App di spreadsheet sumber, lalu tempel URL-nya ke variabel <code style="display:inline;padding:2px 6px;">API_URL</code> di bagian atas file ini.</p>
+          </div>
+        </div>`;
+      return;
+    }
+
+    if (allInvoices.length === 0 && !lastUpdated) {
+      root.innerHTML = `<div class="wrap"><div class="empty">Memuat data dari spreadsheet…</div></div>`;
+      return;
+    }
+
+    const projectSetAll = new Set(allInvoices.map(i => i.tab + '|' + i.codeProject));
+
+    let bodyHtml = '';
+    if (activeView === 'piutang') bodyHtml = renderPiutangView();
+    else if (activeView === 'bunga') bodyHtml = renderBungaView();
+
+    root.innerHTML = `
+      <div class="wrap">
+        <div class="header">
+          <div class="header-left">
+            <p class="eyebrow">B&amp;T GROUP · DIREKTORAT BISNIS</p>
+            <h1 class="title">Report Penagihan &amp; Piutang</h1>
+            <p class="subtitle">${projectSetAll.size} baris invoice aktif · 5 Sales · data langsung dari spreadsheet sumber</p>
+          </div>
+          <div class="header-right">
+            <div class="live-pill"><span class="live-dot" id="bt-live-dot"></span> <span id="bt-updated-text">terhubung</span></div>
+            <button class="refresh-btn" id="bt-refresh-btn">Refresh sekarang</button>
+          </div>
+        </div>
+
+        <div class="view-tabs">
+          <span class="view-tab ${activeView==='piutang'?'active':''}" data-view="piutang">Piutang</span>
+          <span class="view-tab ${activeView==='bunga'?'active':''}" data-view="bunga">Alokasi Bunga</span>
+        </div>
+
+        ${bodyHtml}
+
+        <p class="footnote">Update terakhir: ${lastUpdated ? new Date(lastUpdated).toLocaleString('id-ID') : '-'} · data mengikuti spreadsheet maksimal 5 menit terakhir</p>
+      </div>
+    `;
+
+    bindEvents();
+  }
+
+  // ============================================================
+  // TAB 1: PIUTANG (AR Summary + progress bulanan riil dari snapshot log +
+  // detail operasional per invoice, filterable per PIC & status)
+  // ============================================================
+  function formatPeriodLabel(periodKey) {
+    if (!periodKey) return '-';
+    const parts = periodKey.split('-');
+    const idx = parseInt(parts[1],10) - 1;
+    return (BULAN_NAMES_FULL[idx] || parts[1]) + ' ' + parts[0];
+  }
+
+  function renderPiutangView() {
+    const withCat = allInvoices.map(inv => Object.assign({}, inv, { cat: categorize(inv.status) }));
+    const salesList = activePic === 'ALL' ? PICS : [activePic];
+    const agg = aggregatePicDash(salesList);
+
+    let filtered = withCat.filter(i => {
+      if (activePic !== 'ALL' && i.tab !== activePic) return false;
+      if (activeStatus !== 'ALL' && i.cat.key !== activeStatus) return false;
+      if (searchTerm) {
+        const hay = (i.cust + ' ' + i.pekerjaan + ' ' + i.codeProject).toLowerCase();
+        if (hay.indexOf(searchTerm.toLowerCase()) === -1) return false;
+      }
+      return true;
+    });
+
+    filtered.sort((a,b) => {
+      let av = a[sortKey], bv = b[sortKey];
+      if (typeof av === 'string') { av = av || ''; bv = bv || ''; return sortDir * av.localeCompare(bv); }
+      return sortDir * ((av||0) - (bv||0));
+    });
+
+    const rowsHtml = filtered.slice(0, 300).map(i => `
+      <tr>
+        <td class="mono">${i.tab}</td>
+        <td>${escapeHtml(i.cust)}</td>
+        <td class="pekerjaan-cell">${escapeHtml(i.pekerjaan)}</td>
+        <td class="mono">${escapeHtml(String(i.codeProject||''))}</td>
+        <td class="num">${fmtIDR(i.totalTagihan)}</td>
+        <td class="num" style="${i.sisaPiutang > 1 ? 'color:var(--brick-deep);font-weight:600' : ''}">${fmtIDR(i.sisaPiutang)}</td>
+        <td><span class="stamp ${i.cat.cls}">${escapeHtml(i.cat.label)}</span></td>
+        <td class="mono">${i.tglJatuhTempo || '-'}</td>
+        <td class="ket-cell">${escapeHtml(i.keterangan || '')}</td>
+      </tr>
+    `).join('');
+
+    const salesLabel = activePic === 'ALL' ? 'B&T Group' : activePic;
+
+    return `
+        <div class="filters" style="margin-bottom:22px;">
+          <div class="pill-group" id="bt-pic-filters">
+            ${['ALL',...PICS].map(p => `<span class="pill ${activePic===p?'active':''}" data-pic="${p}">${p==='ALL'?'B&T Group':p}</span>`).join('')}
+          </div>
+        </div>
+
+        <p class="section-label">AR Berdasarkan Status <span>· ${escapeHtml(salesLabel)}</span></p>
+        <div class="hero-card">
+          <div>
+            <p class="label">Total Piutang</p>
+            <p class="value">${fmtIDR(agg.piutang)}</p>
+            <p class="sub">sudah ditagih, belum dibayar</p>
+          </div>
+          <span class="badge">${escapeHtml(salesLabel)}</span>
+        </div>
+        <div class="status-grid">
+          ${STATUS_ORDER_TOP.map(sd => {
+            const val = agg.status[STATUS_SHEET_KEY[sd.key]] || 0;
+            return `
+            <div class="status-card ${sd.cls}">
+              <span class="stamp ${sd.cls}">${escapeHtml(sd.label)}</span>
+              <p class="value">${fmtIDR(val)}</p>
+            </div>`;
+          }).join('')}
+        </div>
+
+        <p class="section-label">AR Summary <span>· ${escapeHtml(salesLabel)}</span></p>
+        <div class="cards">
+          <div class="card">
+            <p class="label">Total SPK (incl PPN)</p>
+            <p class="value">${fmtIDR(agg.allSpkInclPPN)}</p>
+            <p class="sub">nilai kontrak keseluruhan</p>
+          </div>
+          <div class="card amber">
+            <p class="label">Sudah Ditagihkan</p>
+            <p class="value">${fmtIDR(agg.tertagih)}</p>
+            <p class="sub">total invoice terbit</p>
+          </div>
+          <div class="card teal">
+            <p class="label">Pembayaran Diterima</p>
+            <p class="value">${fmtIDR(agg.paid)}</p>
+            <p class="sub">sudah dibayar customer</p>
+          </div>
+          <div class="card brick">
+            <p class="label">Belum Ditagihkan</p>
+            <p class="value">${fmtIDR(agg.belumDitagihInclPPN)}</p>
+            <p class="sub">belum terbit &amp; kirim invoice</p>
+          </div>
+        </div>
+
+        <p class="section-label">Detail Operasional per Invoice <span>· bisa difilter &amp; dicari</span></p>
+        <div class="filters">
+          <div class="pill-group" id="bt-status-filters">
+            ${[['ALL','Semua Status'],...STATUS_ORDER.map(sd => [sd.key, sd.label])].map(([k,l]) =>
+              `<span class="pill ${activeStatus===k?'active':''}" data-status="${k}">${l}</span>`).join('')}
+          </div>
+          <input class="search" id="bt-search" type="text" placeholder="Cari customer / proyek…" value="${escapeHtml(searchTerm)}" />
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th data-key="tab">Sales</th>
+                <th data-key="cust">Customer</th>
+                <th data-key="pekerjaan">Pekerjaan</th>
+                <th data-key="codeProject">Code Project</th>
+                <th data-key="totalTagihan" style="text-align:right">Total Tagihan</th>
+                <th data-key="sisaPiutang" style="text-align:right">Sisa Piutang</th>
+                <th data-key="status">Status</th>
+                <th data-key="tglJatuhTempo">Jatuh Tempo</th>
+                <th>Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml || '<tr><td colspan="9" style="padding:30px;text-align:center;color:var(--slate)">Tidak ada data yang cocok dengan filter.</td></tr>'}</tbody>
+          </table>
+        </div>
+        <p class="footnote" style="text-align:left;margin-top:8px;">${filtered.length} baris invoice pada filter ini</p>
+    `;
+  }
+
+  // ============================================================
+  // TAB 2: ALOKASI BUNGA HOLDING
+  // ============================================================
+  function renderBungaView() {
+    if (!bungaData || !bungaData.rows) {
+      return `<div class="empty">Data alokasi bunga tidak tersedia.</div>`;
+    }
+    const rows = bungaData.rows;
+    const total = bungaData.total || {};
+
+    const klienList = Array.from(new Set(rows.map(r => r.klien).filter(Boolean))).sort();
+
+    let filtered = rows.filter(r => {
+      if (bungaKlien !== 'ALL' && r.klien !== bungaKlien) return false;
+      if (bungaStatus !== 'ALL') {
+        const st = (r.statusPembayaran || '').toLowerCase();
+        if (bungaStatus === 'LUNAS' && st.indexOf('lunas') === -1) return false;
+        if (bungaStatus === 'BELUM' && st.indexOf('belum lunas') === -1) return false;
+        if (bungaStatus === 'ONGOING' && st.indexOf('on going') === -1) return false;
+      }
+      if (bungaSearch) {
+        const hay = (r.klien + ' ' + r.project + ' ' + r.pekerjaan + ' ' + r.projCode).toLowerCase();
+        if (hay.indexOf(bungaSearch.toLowerCase()) === -1) return false;
+      }
+      return true;
+    });
+
+    const sumAlokasi = filtered.reduce((a,b) => a + (b.alokasiBunga||0), 0);
+    const sumRealisasi = filtered.reduce((a,b) => a + (b.realisasiBunga||0), 0);
+    const sumSelisih = filtered.reduce((a,b) => a + (b.selisih||0), 0);
+
+    const rowsHtml = filtered.slice(0, 300).map(r => `
+      <tr>
+        <td>${escapeHtml(r.klien)}</td>
+        <td class="pekerjaan-cell">${escapeHtml(r.project)} <span style="color:var(--slate-light)">— ${escapeHtml(r.pekerjaan)}</span></td>
+        <td class="mono">${escapeHtml(r.projCode)}</td>
+        <td class="num">${fmtIDR(r.nominalSpk)}</td>
+        <td class="num">${fmtIDR(r.alokasiBunga)}</td>
+        <td class="num">${fmtIDR(r.realisasiBunga)}</td>
+        <td class="num" style="${Math.abs(r.selisih)>1?'color:var(--brick-deep);font-weight:600':''}">${fmtIDR(r.selisih)}</td>
+        <td><span class="stamp ${(r.statusPembayaran||'').toLowerCase().indexOf('lunas')===0 || (r.statusPembayaran||'').toLowerCase()==='lunas '?'lunas':(r.statusPembayaran||'').toLowerCase().indexOf('belum')!==-1?'overdue':'other'}">${escapeHtml(r.statusPembayaran||'-')}</span></td>
+      </tr>
+    `).join('');
+
+    return `
+        <p class="section-label">Alokasi Bunga Pinjaman Holding <span>· sumber: sheet "Alokasi Bunga Holding", alokasi biaya bunga per proyek berdasarkan GP</span></p>
+
+        <div class="cards">
+          <div class="card brick">
+            <p class="label">Total Alokasi Bunga (GP)</p>
+            <p class="value">${fmtIDR(sumAlokasi)}</p>
+            <p class="sub">${filtered.length} proyek${bungaKlien!=='ALL'?' · '+escapeHtml(bungaKlien):''}</p>
+          </div>
+          <div class="card amber">
+            <p class="label">Realisasi Bunga</p>
+            <p class="value">${fmtIDR(sumRealisasi)}</p>
+            <p class="sub">sudah diposting finance</p>
+          </div>
+          <div class="card teal">
+            <p class="label">Selisih</p>
+            <p class="value">${fmtIDR(sumSelisih)}</p>
+            <p class="sub">alokasi vs realisasi</p>
+          </div>
+          <div class="card">
+            <p class="label">Total Alokasi (semua proyek)</p>
+            <p class="value">${fmtIDR(total.alokasi)}</p>
+            <p class="sub">grand total dari sheet</p>
+          </div>
+        </div>
+
+        <div class="filters">
+          <div class="pill-group" id="bt-bunga-status-filters">
+            ${[['ALL','Semua Status'],['BELUM','Belum Lunas'],['LUNAS','Lunas'],['ONGOING','On Going']].map(([k,l]) =>
+              `<span class="pill ${bungaStatus===k?'active':''}" data-bungastatus="${k}">${l}</span>`).join('')}
+          </div>
+          <select class="search" id="bt-bunga-klien" style="width:180px;">
+            <option value="ALL">Semua Klien</option>
+            ${klienList.map(k => `<option value="${escapeHtml(k)}" ${bungaKlien===k?'selected':''}>${escapeHtml(k)}</option>`).join('')}
+          </select>
+          <input class="search" id="bt-bunga-search" type="text" placeholder="Cari proyek / kode…" value="${escapeHtml(bungaSearch)}" />
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Klien</th>
+                <th>Proyek</th>
+                <th>Kode</th>
+                <th style="text-align:right">Nominal SPK</th>
+                <th style="text-align:right">Alokasi Bunga</th>
+                <th style="text-align:right">Realisasi</th>
+                <th style="text-align:right">Selisih</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml || '<tr><td colspan="8" style="padding:30px;text-align:center;color:var(--slate)">Tidak ada data yang cocok dengan filter.</td></tr>'}</tbody>
+          </table>
+        </div>
+    `;
+  }
+
+  // ============================================================
+  // EVENTS
+  // ============================================================
+  function bindEvents() {
+    const refreshBtn = document.getElementById('bt-refresh-btn');
+    if (refreshBtn) refreshBtn.onclick = fetchData;
+
+    root.querySelectorAll('.view-tab').forEach(el => {
+      el.onclick = () => { activeView = el.dataset.view; render(); };
+    });
+
+    // Tab Piutang
+    root.querySelectorAll('#bt-pic-filters .pill').forEach(el => {
+      el.onclick = () => { activePic = el.dataset.pic; render(); };
+    });
+    root.querySelectorAll('#bt-status-filters .pill').forEach(el => {
+      el.onclick = () => { activeStatus = el.dataset.status; render(); };
+    });
+    const searchEl = document.getElementById('bt-search');
+    if (searchEl) searchEl.oninput = (e) => { searchTerm = e.target.value; render(); };
+    root.querySelectorAll('thead th[data-key]').forEach(th => {
+      th.onclick = () => {
+        const key = th.dataset.key;
+        if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = -1; }
+        render();
+      };
+    });
+
+    // Tab Alokasi Bunga
+    root.querySelectorAll('#bt-bunga-status-filters .pill').forEach(el => {
+      el.onclick = () => { bungaStatus = el.dataset.bungastatus; render(); };
+    });
+    const bungaKlienEl = document.getElementById('bt-bunga-klien');
+    if (bungaKlienEl) bungaKlienEl.onchange = (e) => { bungaKlien = e.target.value; render(); };
+    const bungaSearchEl = document.getElementById('bt-bunga-search');
+    if (bungaSearchEl) bungaSearchEl.oninput = (e) => { bungaSearch = e.target.value; render(); };
+  }
+
+  // ============================================================
+  // FETCH
+  // ============================================================
+  async function fetchData() {
+    const dot = document.getElementById('bt-live-dot');
+    const txt = document.getElementById('bt-updated-text');
+    try {
+      const res = await fetch(API_URL, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      allInvoices = data.invoices || [];
+      officialData = data.official || null;
+      picDashboards = data.picDashboards || null;
+      bungaData = data.bunga || null;
+      grandTotals = data.grandTotals || null;
+      arHistory = data.arHistory || [];
+      lastUpdated = data.lastUpdated || new Date().toISOString();
+      if (dot) { dot.classList.remove('err'); }
+      if (txt) { txt.textContent = 'live'; }
+      render();
+    } catch (err) {
+      if (dot) dot.classList.add('err');
+      if (txt) txt.textContent = 'koneksi gagal';
+      if (allInvoices.length === 0) {
+        root.innerHTML = `
+          <div class="wrap">
+            <div class="errbox">
+              <p class="eyebrow" style="color:var(--brick)">GAGAL MEMUAT DATA</p>
+              <p style="font-family:var(--font-display);font-size:18px;color:var(--ink);margin:6px 0 4px;">Tidak bisa terhubung ke spreadsheet</p>
+              <p>Periksa apakah Web App Apps Script masih ter-deploy dengan akses "Anyone", dan URL di API_URL sudah benar.</p>
+              <code>${err.message}</code>
+            </div>
+          </div>`;
+      }
+    }
+  }
+
+  fetchData();
+  setInterval(fetchData, REFRESH_MS);
+})();
+</script>
+
