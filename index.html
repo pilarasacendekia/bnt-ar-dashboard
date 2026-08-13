@@ -522,6 +522,8 @@
 
   const root = document.getElementById('bt-dashboard-root');
   let allInvoices = [];
+  let spkEntries = [];
+  let belumInvEntries = [];
   let officialData = null;
   let picDashboards = null;
   let bungaData = null;
@@ -533,6 +535,7 @@
 
   // state tab "Piutang"
   let activePic = 'ALL';
+  let activeCust = 'ALL';
   let activeStatus = 'ALL';
   let searchTerm = '';
   let sortKey = 'sisaPiutang';
@@ -600,21 +603,48 @@
     LUNAS: 'LUNAS'
   };
 
-  function aggregatePicDash(picList) {
+  // Menghitung ulang AR Summary & breakdown status dari data mentah
+  // (invoices + spkEntries + belumInvEntries), supaya bisa difilter
+  // kombinasi Sales + Customer sekaligus — picDashboards dari server hanya
+  // bisa difilter per PIC saja, tidak sampai level customer.
+  function computeAgg(picList, custFilter) {
     const agg = { allSpkInclPPN: 0, tertagih: 0, paid: 0, piutang: 0, belumDitagihInclPPN: 0, status: {} };
-    picList.forEach(p => {
-      const d = picDashboards && picDashboards[p];
-      if (!d) return;
-      agg.allSpkInclPPN += d.allSpkInclPPN || 0;
-      agg.tertagih += d.tertagih || 0;
-      agg.paid += d.paid || 0;
-      agg.piutang += d.piutang || 0;
-      agg.belumDitagihInclPPN += d.belumDitagihInclPPN || 0;
-      Object.keys(d.status || {}).forEach(k => {
-        agg.status[k] = (agg.status[k] || 0) + d.status[k];
-      });
+    const picSet = new Set(picList);
+
+    (spkEntries || []).forEach(e => {
+      if (!picSet.has(e.tab)) return;
+      if (custFilter !== 'ALL' && e.cust !== custFilter) return;
+      agg.allSpkInclPPN += (e.value || 0) * 1.11;
     });
+    (belumInvEntries || []).forEach(e => {
+      if (!picSet.has(e.tab)) return;
+      if (custFilter !== 'ALL' && e.cust !== custFilter) return;
+      agg.belumDitagihInclPPN += (e.value || 0) * 1.11;
+    });
+    allInvoices.forEach(inv => {
+      if (!picSet.has(inv.tab)) return;
+      if (custFilter !== 'ALL' && inv.cust !== custFilter) return;
+      agg.tertagih += inv.totalTagihan || 0;
+      agg.paid += inv.paid || 0;
+      const cat = categorize(inv.status);
+      const sheetKey = STATUS_SHEET_KEY[cat.key];
+      if (sheetKey) {
+        const val = cat.key === 'LUNAS' ? (inv.paid || 0) : (inv.sisaPiutang > 1 ? inv.sisaPiutang : 0);
+        agg.status[sheetKey] = (agg.status[sheetKey] || 0) + val;
+      }
+    });
+    agg.piutang = agg.tertagih - agg.paid;
     return agg;
+  }
+
+  function getCustomerOptions(picList) {
+    const picSet = new Set(picList);
+    const names = new Set();
+    allInvoices.forEach(inv => {
+      if (!picSet.has(inv.tab)) return;
+      if (inv.cust) names.add(inv.cust);
+    });
+    return Array.from(names).sort((a,b) => a.localeCompare(b));
   }
 
   // ============================================================
@@ -702,10 +732,13 @@
   function renderPiutangView() {
     const withCat = allInvoices.map(inv => Object.assign({}, inv, { cat: categorize(inv.status) }));
     const salesList = activePic === 'ALL' ? PICS : [activePic];
-    const agg = aggregatePicDash(salesList);
+    const agg = computeAgg(salesList, activeCust);
+    const custOptions = getCustomerOptions(salesList);
+    if (activeCust !== 'ALL' && custOptions.indexOf(activeCust) === -1) activeCust = 'ALL';
 
     let filtered = withCat.filter(i => {
       if (activePic !== 'ALL' && i.tab !== activePic) return false;
+      if (activeCust !== 'ALL' && i.cust !== activeCust) return false;
       if (activeStatus !== 'ALL' && i.cat.key !== activeStatus) return false;
       if (searchTerm) {
         const hay = (i.cust + ' ' + i.pekerjaan + ' ' + i.codeProject).toLowerCase();
@@ -768,13 +801,17 @@
       </tr>
     `).join('');
 
-    const salesLabel = activePic === 'ALL' ? 'B&T Group' : activePic;
+    const salesLabel = (activePic === 'ALL' ? 'B&T Group' : activePic) + (activeCust !== 'ALL' ? ' · ' + activeCust : '');
 
     return `
         <div class="filters" style="margin-bottom:22px;">
           <div class="pill-group" id="bt-pic-filters">
             ${['ALL',...PICS].map(p => `<span class="pill ${activePic===p?'active':''}" data-pic="${p}">${p==='ALL'?'B&T Group':p}</span>`).join('')}
           </div>
+          <select class="search" id="bt-cust-filter" style="width:220px;">
+            <option value="ALL">Semua Customer</option>
+            ${custOptions.map(c => `<option value="${escapeHtml(c)}" ${activeCust===c?'selected':''}>${escapeHtml(c)}</option>`).join('')}
+          </select>
         </div>
 
         <p class="section-label">AR Berdasarkan Status <span>· ${escapeHtml(salesLabel)}</span></p>
@@ -984,8 +1021,10 @@
 
     // Tab Piutang
     root.querySelectorAll('#bt-pic-filters .pill').forEach(el => {
-      el.onclick = () => { activePic = el.dataset.pic; render(); };
+      el.onclick = () => { activePic = el.dataset.pic; activeCust = 'ALL'; render(); };
     });
+    const custEl = document.getElementById('bt-cust-filter');
+    if (custEl) custEl.onchange = (e) => { activeCust = e.target.value; render(); };
     root.querySelectorAll('#bt-status-filters .pill').forEach(el => {
       el.onclick = () => { activeStatus = el.dataset.status; render(); };
     });
@@ -1027,6 +1066,8 @@
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       allInvoices = data.invoices || [];
+      spkEntries = data.spkEntries || [];
+      belumInvEntries = data.belumInvEntries || [];
       officialData = data.official || null;
       picDashboards = data.picDashboards || null;
       bungaData = data.bunga || null;
