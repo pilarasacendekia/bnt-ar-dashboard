@@ -642,6 +642,14 @@
     if (activeView === 'piutang') bodyHtml = renderPiutangView();
     else if (activeView === 'bunga') bodyHtml = renderBungaView();
 
+    // Simpan fokus input & posisi scroll SEBELUM DOM diganti, supaya saat
+    // user mengetik di kolom pencarian, kursor & scroll tidak reset/loncat.
+    const activeEl = document.activeElement;
+    const focusedId = (activeEl && activeEl.id && root.contains(activeEl)) ? activeEl.id : null;
+    const selStart = (focusedId && typeof activeEl.selectionStart === 'number') ? activeEl.selectionStart : null;
+    const selEnd = (focusedId && typeof activeEl.selectionEnd === 'number') ? activeEl.selectionEnd : null;
+    const scrollX = window.scrollX, scrollY = window.scrollY;
+
     root.innerHTML = `
       <div class="wrap">
         <div class="header">
@@ -666,6 +674,17 @@
       </div>
     `;
 
+    // Kembalikan fokus, posisi kursor, dan posisi scroll setelah DOM diganti.
+    if (focusedId) {
+      const restored = document.getElementById(focusedId);
+      if (restored) {
+        restored.focus();
+        if (selStart !== null && restored.setSelectionRange) {
+          try { restored.setSelectionRange(selStart, selEnd); } catch (e) {}
+        }
+      }
+    }
+    window.scrollTo(scrollX, scrollY);
     bindEvents();
   }
 
