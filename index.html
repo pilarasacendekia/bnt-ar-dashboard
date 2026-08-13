@@ -537,6 +537,8 @@
   let searchTerm = '';
   let sortKey = 'sisaPiutang';
   let sortDir = -1;
+  let custSortKey = 'custSisaPiutang';
+  let custSortDir = -1;
   let compareWith = ''; // period key (yyyy-MM) untuk dibandingkan dengan saat ini
 
   // state tab "Alokasi Bunga"
@@ -565,10 +567,10 @@
 
   function categorize(status) {
     const s = (status || '').trim().toLowerCase();
-    if (s.indexOf('lunas') === 0 || s === 'lunas') return { key: 'LUNAS', label: 'Lunas', cls: 'lunas' };
+    if (s.indexOf('lunas') === 0 || s === 'lunas') return { key: 'LUNAS', label: 'Paid', cls: 'lunas' };
     if (s.indexOf('sudah jatuh tempo') !== -1) return { key: 'OVERDUE', label: 'Jatuh Tempo', cls: 'overdue' };
     if (s.indexOf('belum jatuh tempo') !== -1) return { key: 'UPCOMING', label: 'Belum Jatuh Tempo', cls: 'upcoming' };
-    if (s.indexOf('bermasalah') !== -1 || s.indexOf('terhambat') !== -1) return { key: 'BERMASALAH', label: 'Tagihan Bermasalah', cls: 'bermasalah' };
+    if (s.indexOf('bermasalah') !== -1 || s.indexOf('terhambat') !== -1) return { key: 'BERMASALAH', label: 'Lainnya', cls: 'bermasalah' };
     if (s.indexOf('kurang bupot') !== -1) return { key: 'KURANG_BUPOT', label: 'kurang Bupot', cls: 'kurangbupot' };
     if (s.indexOf('kurang ssp') !== -1 || s.indexOf('ssp/ppn') !== -1) return { key: 'KURANG_SSP', label: 'Kurang SSP/PPN', cls: 'kurangssp' };
     if (!s) return { key: 'OTHER', label: '—', cls: 'other' };
@@ -578,7 +580,7 @@
   const STATUS_ORDER = [
     { key: 'OVERDUE', label: 'Jatuh Tempo', cls: 'overdue' },
     { key: 'UPCOMING', label: 'Belum Jatuh Tempo', cls: 'upcoming' },
-    { key: 'BERMASALAH', label: 'Tagihan Bermasalah', cls: 'bermasalah' },
+    { key: 'BERMASALAH', label: 'Lainnya', cls: 'bermasalah' },
     { key: 'KURANG_BUPOT', label: 'kurang Bupot', cls: 'kurangbupot' },
     { key: 'KURANG_SSP', label: 'Kurang SSP/PPN', cls: 'kurangssp' },
     { key: 'LUNAS', label: 'Pembayaran Diterima', cls: 'lunas' }
@@ -587,7 +589,8 @@
   // (itu sudah tercermin lewat "Total Piutang" yang mengecil) — tetap tersedia
   // sebagai pilihan filter di tabel detail invoice di bawah.
   const STATUS_ORDER_TOP = STATUS_ORDER.filter(sd => sd.key !== 'LUNAS');
-  // kunci status di picDashboards (Code.gs) memakai penulisan asli kolom L
+  // kunci status di picDashboards (Code.gs) memakai penulisan asli kolom L —
+  // JANGAN diubah, ini bukan label tampilan, tapi kunci pencocokan data backend.
   const STATUS_SHEET_KEY = {
     OVERDUE: 'Sudah jatuh Tempo',
     UPCOMING: 'Belum jatuh tempo',
@@ -635,8 +638,6 @@
       return;
     }
 
-    const projectSetAll = new Set(allInvoices.map(i => i.tab + '|' + i.codeProject));
-
     let bodyHtml = '';
     if (activeView === 'piutang') bodyHtml = renderPiutangView();
     else if (activeView === 'bunga') bodyHtml = renderBungaView();
@@ -647,7 +648,6 @@
           <div class="header-left">
             <p class="eyebrow">B&amp;T GROUP · DIREKTORAT BISNIS</p>
             <h1 class="title">Report Penagihan &amp; Piutang</h1>
-            <p class="subtitle">${projectSetAll.size} baris invoice aktif · 5 Sales · data langsung dari spreadsheet sumber</p>
           </div>
           <div class="header-right">
             <div class="live-pill"><span class="live-dot" id="bt-live-dot"></span> <span id="bt-updated-text">terhubung</span></div>
@@ -715,6 +715,40 @@
       </tr>
     `).join('');
 
+    // ---- Detail per Customer — agregat dari data yang sama dengan tabel di atas ----
+    const custMap = {};
+    filtered.forEach(i => {
+      const name = i.cust || '(tanpa nama)';
+      if (!custMap[name]) {
+        custMap[name] = { name, projects: new Set(), invoices: 0, totalTagihan: 0, sisaPiutang: 0 };
+      }
+      custMap[name].projects.add(i.tab + '|' + i.codeProject);
+      custMap[name].invoices += 1;
+      custMap[name].totalTagihan += i.totalTagihan || 0;
+      custMap[name].sisaPiutang += (i.sisaPiutang > 1 ? i.sisaPiutang : 0);
+    });
+    let customerRows = Object.values(custMap).map(c => ({
+      custName: c.name,
+      custProjects: c.projects.size,
+      custInvoices: c.invoices,
+      custTotalTagihan: c.totalTagihan,
+      custSisaPiutang: c.sisaPiutang
+    }));
+    customerRows.sort((a,b) => {
+      let av = a[custSortKey], bv = b[custSortKey];
+      if (typeof av === 'string') { av = av || ''; bv = bv || ''; return custSortDir * av.localeCompare(bv); }
+      return custSortDir * ((av||0) - (bv||0));
+    });
+    const customerRowsHtml = customerRows.slice(0, 200).map(c => `
+      <tr>
+        <td>${escapeHtml(c.custName)}</td>
+        <td class="num">${c.custProjects}</td>
+        <td class="num">${c.custInvoices}</td>
+        <td class="num">${fmtIDR(c.custTotalTagihan)}</td>
+        <td class="num" style="${c.custSisaPiutang > 1 ? 'color:var(--brick-deep);font-weight:600' : ''}">${fmtIDR(c.custSisaPiutang)}</td>
+      </tr>
+    `).join('');
+
     const salesLabel = activePic === 'ALL' ? 'B&T Group' : activePic;
 
     return `
@@ -768,7 +802,7 @@
           </div>
         </div>
 
-        <p class="section-label">Detail Operasional per Invoice <span>· bisa difilter &amp; dicari</span></p>
+        <p class="section-label">Detail per Status <span>· bisa difilter &amp; dicari</span></p>
         <div class="filters">
           <div class="pill-group" id="bt-status-filters">
             ${[['ALL','Semua Status'],...STATUS_ORDER.map(sd => [sd.key, sd.label])].map(([k,l]) =>
@@ -796,6 +830,23 @@
           </table>
         </div>
         <p class="footnote" style="text-align:left;margin-top:8px;">${filtered.length} baris invoice pada filter ini</p>
+
+        <p class="section-label" style="margin-top:28px;">Detail per Customer <span>· agregat dari hasil filter di atas</span></p>
+        <div class="table-wrap" id="bt-customer-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th data-custkey="custName">Customer</th>
+                <th data-custkey="custProjects" style="text-align:right">Jumlah Proyek</th>
+                <th data-custkey="custInvoices" style="text-align:right">Jumlah Invoice</th>
+                <th data-custkey="custTotalTagihan" style="text-align:right">Total Tagihan</th>
+                <th data-custkey="custSisaPiutang" style="text-align:right">Sisa Piutang</th>
+              </tr>
+            </thead>
+            <tbody>${customerRowsHtml || '<tr><td colspan="5" style="padding:30px;text-align:center;color:var(--slate)">Tidak ada data yang cocok dengan filter.</td></tr>'}</tbody>
+          </table>
+        </div>
+        <p class="footnote" style="text-align:left;margin-top:8px;">${customerRows.length} customer pada filter ini</p>
     `;
   }
 
@@ -925,6 +976,13 @@
       th.onclick = () => {
         const key = th.dataset.key;
         if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = -1; }
+        render();
+      };
+    });
+    root.querySelectorAll('#bt-customer-table-wrap thead th[data-custkey]').forEach(th => {
+      th.onclick = () => {
+        const key = th.dataset.custkey;
+        if (custSortKey === key) custSortDir *= -1; else { custSortKey = key; custSortDir = -1; }
         render();
       };
     });
